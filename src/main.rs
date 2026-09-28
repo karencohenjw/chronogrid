@@ -1,5 +1,5 @@
 use anyhow::{bail, Context, Result};
-use chrono::{Datelike, LocalResult, NaiveDate, TimeZone};
+use chrono::{Datelike, LocalResult, NaiveDate, Offset, TimeZone};
 use chrono_tz::Tz;
 use clap::{Parser, Subcommand, ValueEnum};
 use serde::Serialize;
