@@ -1,0 +1,24 @@
+[package]
+name = "chronogrid"
+version = "0.1.0"
+edition = "2021"
+description = "Temporal chaos and calendar conformance lab for date, timezone, recurrence and calendar edge cases."
+license = "MIT"
+repository = "https://github.com/jwcalendar/chronogrid"
+homepage = "https://jwcalendar.com/"
+keywords = ["calendar", "timezone", "rrule", "datetime", "testing"]
+categories = ["command-line-utilities", "development-tools::testing"]
+
+[dependencies]
+anyhow = "1"
+chrono = { version = "0.4", features = ["serde"] }
+chrono-tz = "0.10"
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+panic = "abort"
