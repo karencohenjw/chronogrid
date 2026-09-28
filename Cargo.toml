@@ -2,11 +2,11 @@
 name = "chronogrid"
 version = "0.1.0"
 edition = "2021"
-description = "Temporal chaos and calendar conformance lab for date, timezone, recurrence and calendar edge cases."
+description = "Deterministic date, calendar, and timezone conformance CLI."
 license = "MIT"
-repository = "https://github.com/jwcalendar/chronogrid"
+repository = "https://github.com/karencohenjw/chronogrid"
 homepage = "https://jwcalendar.com/"
-keywords = ["calendar", "timezone", "rrule", "datetime", "testing"]
+keywords = ["calendar", "timezone", "datetime", "testing", "cli"]
 categories = ["command-line-utilities", "development-tools::testing"]
 
 [dependencies]
