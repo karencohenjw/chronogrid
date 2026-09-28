@@ -183,10 +183,7 @@ fn print_text_report(inspection: &DateInspection) {
     println!("Ordinal day:        {:03}", inspection.ordinal_day);
     println!("Days in month:      {}", inspection.days_in_month);
     println!("Days in year:       {}", inspection.days_in_year);
-    println!(
-        "Days remaining:     {}",
-        inspection.days_remaining_in_year
-    );
+    println!("Days remaining:     {}", inspection.days_remaining_in_year);
     println!("Leap year:          {}", inspection.is_leap_year);
     println!();
 
