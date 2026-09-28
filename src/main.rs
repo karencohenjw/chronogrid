@@ -576,7 +576,7 @@ fn challenge_vectors() -> Vec<ChallengeVector> {
     push(
         "MONTH-2028-02",
         "END-OF-MONTH",
-        days_in_month(2028, 2) == Ok(29),
+        matches!(days_in_month(2028, 2), Ok(29)),
     );
     push(
         "JD-1970-01-01",
@@ -643,7 +643,7 @@ fn challenge(format: OutputFormat, report: Option<PathBuf>) -> Result<()> {
         vectors,
         reproduction_command: "chronogrid challenge".into(),
     };
-    if let Some(path) = report {
+    if let Some(ref path) = report {
         let mut html=String::from("<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><title>ChronoGrid conformance report</title><h1>ChronoGrid Temporal Conformance</h1>");
         html.push_str(&format!("<p>Version {} · vectors {} · passed {} · failed {}</p><p>Reproduce with <code>chronogrid challenge</code></p><ul>",r.version,r.vectors_executed,r.passed,r.failed));
         for v in &r.vectors {
@@ -668,7 +668,7 @@ fn challenge(format: OutputFormat, report: Option<PathBuf>) -> Result<()> {
                 "Vectors executed: {}\nFailures: {}",
                 r.vectors_executed, r.failed
             );
-            if let Some(p) = report {
+            if let Some(p) = &report {
                 println!("HTML report: {}", p.display());
             }
             if r.failed > 0 {
