@@ -339,24 +339,16 @@ fn date_inspect(input: &str, zone_input: &str, format: OutputFormat) -> Result<(
         OutputFormat::Json => emit(&result, format),
         OutputFormat::Text => {
             println!("ChronoGrid Date Inspection");
-            println!("Gregorian date: {}", result.gregorian_date);
-            println!("Weekday: {}", result.weekday);
-            println!(
-                "Year/month/day: {}-{:02}-{:02}",
-                result.year, result.month, result.day
-            );
-            println!(
-                "Quarter: Q{}; ordinal: {:03}; month length: {}",
-                result.quarter, result.ordinal_day, result.days_in_month
-            );
-            println!(
-                "Leap year: {}; days remaining: {}",
-                result.is_leap_year, result.days_remaining
-            );
+            println!("date: {}", result.gregorian_date);
+            println!("weekday: {}", result.weekday);
+            println!("ordinal day: {:03}", result.ordinal_day);
             println!(
                 "ISO week date: {}-W{:02}-{}",
                 result.iso_week_year, result.iso_week, result.iso_weekday
             );
+            println!("leap year: {}", result.is_leap_year);
+            println!("days in month: {}", result.days_in_month);
+            println!("days remaining in year: {}", result.days_remaining);
             println!(
                 "Timezone: {}; local midnight: {}; UTC offset: {}",
                 result.timezone,
