@@ -52,14 +52,7 @@ jobs:
         env:
           RELEASE_VERSION: ${{ inputs.release_version }}
         run: |
-          $stage = Join-Path $PWD 'stage'
-          New-Item -ItemType Directory -Force $stage | Out-Null
-          Copy-Item 'target/${{ matrix.target }}/release/chronogrid.exe' $stage
-          Copy-Item README.md, LICENSE $stage
-          $archive = "chronogrid-$env:RELEASE_VERSION-windows-${{ matrix.arch }}.zip"
-          Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $archive
-          $hash = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLower()
-          "$hash  $archive" | Set-Content -Encoding ascii "sha-${{ matrix.arch }}.txt"
+          python scripts/archive_windows.py --version $env:RELEASE_VERSION --arch ${{ matrix.arch }} --binary "target/${{ matrix.target }}/release/chronogrid.exe" --repository . --output .
       - uses: actions/upload-artifact@v4
         with:
           name: chronogrid-windows-${{ matrix.arch }}-prebuild

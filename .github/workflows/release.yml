@@ -42,13 +42,7 @@ jobs:
         run: |
           cargo build --release --target ${{ matrix.target }}
           $version = "${{ github.ref_name }}".TrimStart('v')
-          $stage = Join-Path $PWD 'stage'
-          New-Item -ItemType Directory -Force $stage | Out-Null
-          Copy-Item "target/${{ matrix.target }}/release/chronogrid.exe" $stage
-          Copy-Item README.md, LICENSE $stage
-          $archive = "chronogrid-$version-windows-${{ matrix.arch }}.zip"
-          Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $archive
-          Get-FileHash $archive -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  $archive" } | Set-Content -Encoding ascii "sha-${{ matrix.arch }}.txt"
+          python scripts/archive_windows.py --version $version --arch ${{ matrix.arch }} --binary "target/${{ matrix.target }}/release/chronogrid.exe" --repository . --output .
       - uses: actions/upload-artifact@v4
         with:
           name: windows-${{ matrix.arch }}
