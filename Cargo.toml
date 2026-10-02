@@ -1,8 +1,8 @@
 [package]
 name = "chronogrid"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
-description = "Deterministic date, calendar, and timezone conformance CLI."
+description = "Deterministic temporal engineering CLI for calendar, timezone, ICS, recurrence and date-boundary diagnostics."
 license = "MIT"
 repository = "https://github.com/karencohenjw/chronogrid"
 homepage = "https://jwcalendar.com/"
@@ -16,6 +16,7 @@ chrono-tz = "0.10"
 clap = { version = "4", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+rrule = "0.14"
 
 [profile.release]
 strip = true
