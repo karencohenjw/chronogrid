@@ -1,0 +1,78 @@
+name: Windows release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-pc-windows-msvc
+            arch: x86_64
+          - target: i686-pc-windows-msvc
+            arch: i686
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: Check source and tests
+        if: matrix.arch == 'x86_64'
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --all-targets --all-features -- -D warnings
+          cargo test --all-features
+      - name: Confirm tag matches package version
+        shell: pwsh
+        run: |
+          $tagVersion = "${{ github.ref_name }}".TrimStart('v')
+          $cargoVersion = (Select-String -Path Cargo.toml -Pattern '^version = "([^"]+)"').Matches[0].Groups[1].Value
+          if ($tagVersion -ne $cargoVersion) { throw "Tag $tagVersion does not match Cargo version $cargoVersion" }
+      - name: Build and stage release archive
+        shell: pwsh
+        run: |
+          cargo build --release --target ${{ matrix.target }}
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          $stage = Join-Path $PWD 'stage'
+          New-Item -ItemType Directory -Force $stage | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/chronogrid.exe" $stage
+          Copy-Item README.md, LICENSE $stage
+          $archive = "chronogrid-$version-windows-${{ matrix.arch }}.zip"
+          Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $archive
+          Get-FileHash $archive -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  $archive" } | Set-Content -Encoding ascii "sha-${{ matrix.arch }}.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ matrix.arch }}
+          path: |
+            chronogrid-*-windows-${{ matrix.arch }}.zip
+            sha-${{ matrix.arch }}.txt
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: windows-*
+          merge-multiple: true
+          path: release-assets
+      - name: Create release checksums
+        run: |
+          cd release-assets
+          cat sha-*.txt | sort -k2 > SHA256SUMS.txt
+          rm sha-*.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: ChronoGrid ${{ github.ref_name }}
+          body_path: RELEASE_NOTES.md
+          files: release-assets/*
