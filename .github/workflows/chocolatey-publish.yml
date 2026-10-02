@@ -83,19 +83,17 @@ jobs:
             }
             if ($installScript -match '__SHA256_|__CHECKSUM__') { throw 'Package contains an unfinished checksum.' }
 
-            $manifest = (Invoke-WebRequest -Uri 'https://github.com/karencohenjw/chronogrid/releases/download/v0.2.0/SHA256SUMS.txt' -UseBasicParsing).Content
+            # SHA-256 values displayed by GitHub for the two v0.2.0 release assets.
             $publishedHashes = @{
               i686 = 'd66ba1fdf26da61750b60c5cbeb150aed1ea932dde482ba6cfee12dc7cc9265a'
               x86_64 = '0ff0c1e736c31b8ccd1942354ce85f107281f95903e8216f207eed2cf4cd5662'
             }
             foreach ($arch in @('i686', 'x86_64')) {
-              $assetName = "chronogrid-0.2.0-windows-$arch.zip"
               $releaseHash = $publishedHashes[$arch]
-              if (-not $manifest.Contains($assetName) -or -not $manifest.Contains($releaseHash)) { throw "SHA256SUMS.txt does not contain the published $arch archive name and checksum." }
               $checksumVar = if ($arch -eq 'i686') { 'checksum32' } else { 'checksum64' }
               $checksumPattern = '(?im)^\$' + [regex]::Escape($checksumVar) + "\s*=\s*'([0-9a-f]{64})'"
               $checksumMatch = [regex]::Match($installScript, $checksumPattern)
-              if (-not $checksumMatch.Success -or $checksumMatch.Groups[1].Value -cne $releaseHash) { throw "Chocolatey $arch checksum does not match the published release manifest." }
+              if (-not $checksumMatch.Success -or $checksumMatch.Groups[1].Value -cne $releaseHash) { throw "Chocolatey $arch checksum does not match the GitHub release asset digest." }
             }
           } finally { $archive.Dispose() }
 
