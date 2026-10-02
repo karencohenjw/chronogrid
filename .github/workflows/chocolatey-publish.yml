@@ -86,11 +86,12 @@ jobs:
             $manifest = (Invoke-WebRequest -Uri 'https://github.com/karencohenjw/chronogrid/releases/download/v0.2.0/SHA256SUMS.txt' -UseBasicParsing).Content
             foreach ($arch in @('i686', 'x86_64')) {
               $expectedLine = [regex]::Escape("chronogrid-0.2.0-windows-$arch.zip")
-              $manifestMatch = [regex]::Match($manifest, "(?im)^([0-9a-f]{64})\s+$expectedLine$")
+              $manifestMatch = [regex]::Match($manifest, "(?im)^([0-9a-f]{64})\s+$expectedLine\r?$")
               if (-not $manifestMatch.Success) { throw "SHA256SUMS.txt lacks the $arch archive checksum." }
               $releaseHash = $manifestMatch.Groups[1].Value
               $checksumVar = if ($arch -eq 'i686') { 'checksum32' } else { 'checksum64' }
-              $checksumMatch = [regex]::Match($installScript, "(?im)^\$$checksumVar\s*=\s*'([0-9a-f]{64})'")
+              $checksumPattern = '(?im)^\$' + [regex]::Escape($checksumVar) + "\s*=\s*'([0-9a-f]{64})'"
+              $checksumMatch = [regex]::Match($installScript, $checksumPattern)
               if (-not $checksumMatch.Success -or $checksumMatch.Groups[1].Value -cne $releaseHash) { throw "Chocolatey $arch checksum does not match the published release manifest." }
             }
           } finally { $archive.Dispose() }
