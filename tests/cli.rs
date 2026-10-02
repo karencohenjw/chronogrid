@@ -125,10 +125,7 @@ fn rrule_expansion_honors_count_and_monthly_bysetpos() {
 
 #[test]
 fn committed_ics_fixture_audits_and_expands_exdate() {
-    let file = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/tests/fixtures/weekly-event.ics"
-    );
+    let file = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/weekly-event.ics");
     let audit = chronogrid(&["ics", "audit", file, "--format", "json"]);
     assert!(
         audit.status.success(),
