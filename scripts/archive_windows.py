@@ -38,6 +38,7 @@ def main() -> None:
     (args.output / f"sha-{args.arch}.txt").write_text(
         f"{digest}  {archive_name}\n", encoding="ascii"
     )
+    print(f"SHA256 {archive_name}: {digest}")
 
 
 if __name__ == "__main__":
