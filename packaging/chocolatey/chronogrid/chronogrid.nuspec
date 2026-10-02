@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>chronogrid</id>
+    <version>0.2.0</version>
+    <title>ChronoGrid</title>
+    <authors>Karen Cohen</authors>
+    <owners>Karen Cohen</owners>
+    <summary>Deterministic temporal engineering CLI for calendar, timezone, ICS, recurrence and date-boundary diagnostics.</summary>
+    <description><![CDATA[
+ChronoGrid is a deterministic temporal engineering workbench for developers and test engineers building calendar, scheduling, booking, billing, and timezone-aware software.
+
+It diagnoses daylight-saving gaps and folds, renders event instants across IANA time zones, expands RFC recurrence rules with a bounded output limit, audits a documented subset of ICS calendar files, and provides deterministic calendar conformance vectors. Commands support machine-readable JSON where applicable.
+
+This package installs the official Windows command-line release. It downloads only version-specific GitHub release archives over HTTPS and verifies their SHA-256 checksums. ChronoGrid calculations run locally and the CLI does not send telemetry.
+    ]]></description>
+    <projectUrl>https://jwcalendar.com/</projectUrl>
+    <projectSourceUrl>https://github.com/karencohenjw/chronogrid</projectSourceUrl>
+    <packageSourceUrl>https://github.com/karencohenjw/chronogrid/tree/main/packaging/chocolatey/chronogrid</packageSourceUrl>
+    <docsUrl>https://github.com/karencohenjw/chronogrid/tree/v0.2.0/docs</docsUrl>
+    <bugTrackerUrl>https://github.com/karencohenjw/chronogrid/issues</bugTrackerUrl>
+    <licenseUrl>https://raw.githubusercontent.com/karencohenjw/chronogrid/v0.2.0/LICENSE</licenseUrl>
+    <releaseNotes>https://github.com/karencohenjw/chronogrid/releases/tag/v0.2.0</releaseNotes>
+    <copyright>Copyright (c) 2026 Karen Cohen</copyright>
+    <tags>chronogrid calendar timezone datetime temporal ics icalendar rrule cli developer testing open-source</tags>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
