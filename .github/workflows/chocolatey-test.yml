@@ -1,0 +1,99 @@
+name: Chocolatey package test
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - packaging/chocolatey/chronogrid/**
+      - tests/**
+      - .github/workflows/chocolatey-test.yml
+
+permissions:
+  contents: read
+
+jobs:
+  install-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Chocolatey CLI
+        shell: pwsh
+        run: choco --version
+      - name: Pack and inspect local package
+        shell: pwsh
+        run: |
+          $packageDir = Join-Path $PWD 'packaging/chocolatey/chronogrid'
+          $outputDir = Join-Path $env:RUNNER_TEMP 'chronogrid-package'
+          New-Item -ItemType Directory -Force $outputDir | Out-Null
+          choco pack (Join-Path $packageDir 'chronogrid.nuspec') --outputdirectory $outputDir
+          if ($LASTEXITCODE -ne 0) { throw 'choco pack failed' }
+          $packages = @(Get-ChildItem $outputDir -Filter '*.nupkg')
+          if ($packages.Count -ne 1) { throw "Expected one .nupkg, found $($packages.Count)" }
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = [System.IO.Compression.ZipFile]::OpenRead($packages[0].FullName)
+          try {
+            $names = @($archive.Entries | ForEach-Object FullName)
+            if (-not ($names -contains 'tools/chocolateyInstall.ps1')) { throw 'Install script is absent from package' }
+            if ($names | Where-Object { $_ -match '\.exe$|\.dll$' }) { throw 'Package unexpectedly embeds executable binaries' }
+            $scriptEntry = $archive.GetEntry('tools/chocolateyInstall.ps1')
+            $reader = [System.IO.StreamReader]::new($scriptEntry.Open())
+            $script = $reader.ReadToEnd()
+            $reader.Dispose()
+            if ($script -match '(?i)api[_-]?key|github[_-]?token|password|localhost|__SHA256_') { throw 'Install script contains a prohibited value or unfinished checksum' }
+            if ($script -notmatch "-ChecksumType 'sha256'" -or $script -notmatch "-ChecksumType64 'sha256'") { throw 'Both architectures must request SHA-256 validation' }
+          } finally { $archive.Dispose() }
+          "Package artifact: $($packages[0].FullName)"
+      - name: Install x64 package and smoke-test commands
+        shell: pwsh
+        run: |
+          $packageDir = Join-Path $env:RUNNER_TEMP 'chronogrid-package'
+          choco install chronogrid --version 0.2.0 --source $packageDir --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'x64 Chocolatey install failed' }
+          chronogrid --version
+          if ($LASTEXITCODE -ne 0) { throw 'chronogrid --version failed' }
+          chronogrid --help
+          if ($LASTEXITCODE -ne 0) { throw 'chronogrid --help failed' }
+          chronogrid date inspect 2027-01-01 --timezone America/New_York
+          if ($LASTEXITCODE -ne 0) { throw 'date inspection failed' }
+          chronogrid timezone inspect America/New_York --year 2027
+          if ($LASTEXITCODE -ne 0) { throw 'timezone inspection failed' }
+          chronogrid local classify 2027-11-07T01:30:00 --timezone America/New_York --format json
+          if ($LASTEXITCODE -ne 0) { throw 'local classification failed' }
+          $challenge = chronogrid challenge --format json | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or $challenge.failed -ne 0 -or $challenge.vectors_executed -lt 50) { throw 'challenge vectors failed' }
+          $fixture = Join-Path $PWD 'tests/weekly-event.ics'
+          $audit = chronogrid ics audit $fixture --format json | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or $audit.result -ne 'PASS') { throw 'ICS audit failed' }
+          $expanded = chronogrid ics expand $fixture --from 2027-01-01 --to 2027-01-31 --format json | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or $expanded.Count -ne 3) { throw 'ICS recurrence expansion failed' }
+          $occurrences = chronogrid rrule expand --start 2027-01-04T09:00:00 --timezone Europe/Istanbul --rule 'FREQ=MONTHLY;BYDAY=MO;BYSETPOS=1;COUNT=12' --format json | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or $occurrences.occurrences.Count -ne 12) { throw 'RRULE expansion failed' }
+      - name: Uninstall and verify cleanup
+        shell: pwsh
+        run: |
+          $shim = Join-Path $env:ChocolateyInstall 'bin/chronogrid.exe'
+          choco uninstall chronogrid --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'Chocolatey uninstall failed' }
+          if (Test-Path $shim) { throw 'ChronoGrid command shim remains after uninstall' }
+      - name: Reinstall x64 and test x86 package selection
+        shell: pwsh
+        run: |
+          $packageDir = Join-Path $env:RUNNER_TEMP 'chronogrid-package'
+          choco install chronogrid --version 0.2.0 --source $packageDir --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'x64 reinstall failed' }
+          chronogrid --version
+          if ($LASTEXITCODE -ne 0) { throw 'reinstalled command failed' }
+          choco uninstall chronogrid --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'x64 cleanup failed' }
+          choco install chronogrid --version 0.2.0 --source $packageDir --forcex86 --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'forced x86 install failed' }
+          chronogrid --version
+          if ($LASTEXITCODE -ne 0) { throw 'x86 executable failed to run' }
+          choco uninstall chronogrid --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'x86 cleanup failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chronogrid-chocolatey-nupkg
+          path: ${{ runner.temp }}/chronogrid-package/*.nupkg
+          if-no-files-found: error
+          retention-days: 14
