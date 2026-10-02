@@ -1,0 +1,69 @@
+name: Build Windows release artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: Version to verify against Cargo.toml
+        required: true
+        default: 0.2.0
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-pc-windows-msvc
+            arch: x86_64
+          - target: i686-pc-windows-msvc
+            arch: i686
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: Check project version
+        shell: pwsh
+        env:
+          REQUESTED_VERSION: ${{ inputs.release_version }}
+        run: |
+          if ($env:REQUESTED_VERSION -notmatch '^\d+\.\d+\.\d+$') { throw 'Version must use X.Y.Z format' }
+          $cargoVersion = (Select-String -Path Cargo.toml -Pattern '^version = "([^"]+)"').Matches[0].Groups[1].Value
+          if ($env:REQUESTED_VERSION -ne $cargoVersion) { throw "Requested $env:REQUESTED_VERSION but Cargo.toml is $cargoVersion" }
+      - name: Run checks and build target
+        shell: pwsh
+        run: |
+          if ('${{ matrix.arch }}' -eq 'x86_64') {
+            cargo fmt --all -- --check
+            cargo clippy --all-targets --all-features -- -D warnings
+            cargo test --all-features
+          }
+          cargo build --release --target ${{ matrix.target }}
+      - name: Archive and checksum binary
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ inputs.release_version }}
+        run: |
+          $stage = Join-Path $PWD 'stage'
+          New-Item -ItemType Directory -Force $stage | Out-Null
+          Copy-Item 'target/${{ matrix.target }}/release/chronogrid.exe' $stage
+          Copy-Item README.md, LICENSE $stage
+          $archive = "chronogrid-$env:RELEASE_VERSION-windows-${{ matrix.arch }}.zip"
+          Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $archive
+          $hash = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLower()
+          "$hash  $archive" | Set-Content -Encoding ascii "sha-${{ matrix.arch }}.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chronogrid-windows-${{ matrix.arch }}-prebuild
+          path: |
+            chronogrid-*-windows-${{ matrix.arch }}.zip
+            sha-${{ matrix.arch }}.txt
+          retention-days: 14
